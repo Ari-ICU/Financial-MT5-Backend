@@ -1,0 +1,29 @@
+{
+    "sources": [
+        {
+            "name": "Investing.com Forex",
+            "url": "https://www.investing.com/rss/news_1.rss",
+            "type": "forex"
+        },
+        {
+            "name": "FXStreet",
+            "url": "https://www.fxstreet.com/rss/news",
+            "type": "forex"
+        },
+        {
+            "name": "CoinDesk",
+            "url": "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml",
+            "type": "crypto"
+        },
+        {
+            "name": "CoinTelegraph",
+            "url": "https://cointelegraph.com/rss",
+            "type": "crypto"
+        },
+        {
+            "name": "Forex Factory",
+            "url": "https://www.forexfactory.com/ff_calendar_thisweek.xml",
+            "type": "forex"
+        }
+    ]
+}
