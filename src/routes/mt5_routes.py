@@ -35,11 +35,10 @@ async def get_account(response: Response, account_id: str = None):
         )
     return await MT5Service.get_account_info(account_id)
 
-@router.get("/status", response_model=MT5StatusResponse)
+@router.get("/status")
 async def get_status():
-    """
-    Get current MT5 connection status
-    Like: string GetStatus() in MQL5
-    """
-    # This calls the service to return active connections from the cache
-    return await MT5Service.get_connection_status()
+    logins = await MT5Service.get_active_logins()
+    return {
+        "status": "connected" if logins else "disconnected",
+        "recent_logins": logins
+    }

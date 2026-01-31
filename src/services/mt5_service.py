@@ -36,7 +36,12 @@ class MT5Service:
             "status": "connected",
             "connected_accounts": list(cls._account_data.keys())
         }
-        
+
+    @classmethod
+    async def get_active_logins(cls) -> list:
+        # Returns all unique logins currently stored in memory
+        return list(cls._account_data.keys())
+
     @classmethod
     async def disconnect_all(cls) -> None:
         """Clears cache on shutdown"""
