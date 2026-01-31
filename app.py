@@ -111,7 +111,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8001,  # Set this to 8001
+        port=8001,  # Set this to 8002
         reload=True,
         log_level="info"
     )

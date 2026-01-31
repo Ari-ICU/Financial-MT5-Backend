@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Body
 
 from pydantic import BaseModel
 from typing import Optional, Dict, List
+from datetime import datetime
 
 from src.services.mt5_service import MT5Service
 
@@ -72,5 +73,12 @@ async def get_account(account_id: Optional[str] = None):
 @router.get("/status")
 async def get_status():
     data = await MT5Service.get_connection_status()
-    data["recent_logins"] = await MT5Service.get_active_logins()
-    return data
+    recent = await MT5Service.get_active_logins()
+    
+    # Optional: sort by name or something if you add timestamps later
+    return {
+        **data,
+        "recent_logins": sorted(recent),  # or reverse if you want newest first
+        "active_account_id": active_account_id,
+        "last_updated": datetime.utcnow().isoformat()  # optional
+    }
