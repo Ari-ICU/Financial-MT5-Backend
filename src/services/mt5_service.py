@@ -16,10 +16,15 @@ class MT5Service:
 
     @classmethod
     async def get_account_info(cls, account_id: Optional[str] = None) -> Dict:
-        if not account_id and cls._account_data:
-            account_id = list(cls._account_data.keys())[0]
+        # Remove the auto-fallback to list(keys())[0] to avoid showing 
+        # the wrong account when switching.
+        if not account_id:
+            return {"status": "error", "message": "No account selected"}
 
-        return cls._account_data.get(account_id, {"status": "error", "message": "No data received yet"})
+        return cls._account_data.get(account_id, {
+            "status": "error", 
+            "message": f"No data received for account {account_id}"
+        })
 
     @classmethod
     async def get_connection_status(cls) -> Dict:

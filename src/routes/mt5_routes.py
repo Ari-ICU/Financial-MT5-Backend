@@ -26,20 +26,25 @@ async def update_mt5_data(request: Request):
 
 @router.get("/active-id")
 async def get_active_id(request: Request):
-    # This must return {"active_account_id": null} when logged out
     active_id = request.cookies.get("mt5_id")
+    # Force 'null' to be a string "0" or keep it as None but 
+    # ensure your MQL5 ExtractIdFromJson handles the 'null' literal
     return {"active_account_id": active_id}
 
 @router.get("/account")
 async def get_account(response: Response, account_id: str = None):
-    if account_id:
+    data = await MT5Service.get_account_info(account_id)
+    
+    # Only set the cookie if we actually found data for this account
+    if account_id and data.get("status") != "error":
         response.set_cookie(
             key="mt5_id", 
             value=account_id, 
-            httponly=True,  # This hides it from JavaScript/LocalStorage
-            samesite="lax"
+            httponly=True,
+            samesite="lax",
+            max_age=3600 # 1 hour session
         )
-    return await MT5Service.get_account_info(account_id)
+    return data
 
 @router.get("/status")
 async def get_status():
