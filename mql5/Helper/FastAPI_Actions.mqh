@@ -16,7 +16,7 @@
 //+------------------------------------------------------------------+
 long ExtractIdFromJson(string json)
 {
-   // Check for null response explicitly
+   // Check for the "null" literal specifically
    if(StringFind(json, ":null") != -1) return 0;
 
    string key = "\"active_account_id\":\"";

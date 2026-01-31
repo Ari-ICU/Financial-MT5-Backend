@@ -27,9 +27,8 @@ async def update_mt5_data(request: Request):
 @router.get("/active-id")
 async def get_active_id(request: Request):
     active_id = request.cookies.get("mt5_id")
-    # Force 'null' to be a string "0" or keep it as None but 
-    # ensure your MQL5 ExtractIdFromJson handles the 'null' literal
-    return {"active_account_id": active_id}
+    # Ensuring 'null' is explicit for the EA to catch
+    return {"active_account_id": active_id if active_id else None}
 
 @router.get("/account")
 async def get_account(response: Response, account_id: str = None):
