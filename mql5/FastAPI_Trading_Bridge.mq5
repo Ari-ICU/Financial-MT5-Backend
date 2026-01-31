@@ -82,6 +82,8 @@ void OnTick()
    if(now - last_logic_check < 5) return;
    last_logic_check = now;
 
+   SyncWithUI();
+
    // ───────────────────────────────────────────────────────────────
    //   Put your trading decision logic here
    //   → Do NOT make HTTP calls directly in OnTick()

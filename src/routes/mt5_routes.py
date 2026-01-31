@@ -24,6 +24,12 @@ async def update_mt5_data(request: Request):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/active-id")
+async def get_active_id(request: Request):
+    # This must return {"active_account_id": null} when logged out
+    active_id = request.cookies.get("mt5_id")
+    return {"active_account_id": active_id}
+
 @router.get("/account")
 async def get_account(response: Response, account_id: str = None):
     if account_id:

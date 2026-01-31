@@ -11,6 +11,26 @@
 #include "FastAPI_Http.mqh"
 #include "FastAPI_Logger.mqh"
 
+//+------------------------------------------------------------------+
+//| Helper to extract Account ID from JSON string                    |
+//+------------------------------------------------------------------+
+long ExtractIdFromJson(string json)
+{
+   // Check for null response explicitly
+   if(StringFind(json, ":null") != -1) return 0;
+
+   string key = "\"active_account_id\":\"";
+   int startPos = StringFind(json, key);
+   if(startPos == -1) return 0;
+
+   startPos += StringLen(key);
+   int endPos = StringFind(json, "\"", startPos);
+   if(endPos == -1) return 0;
+
+   string idStr = StringSubstr(json, startPos, endPos - startPos);
+   return StringToInteger(idStr);
+}
+
 void TestConnection()
 {
    string r = HttpGet("/mt5/account");
@@ -38,8 +58,7 @@ void PlaceBuy(double lot = 0.0, double sl = 0.0, double tp = 0.0)
    }
 
    if(lot <= 0) lot = DEFAULT_LOT_SIZE;
-
-   // More efficient JSON construction
+   
    string json = "{"
                  "\"symbol\":\""  + TRADE_SYMBOL              + "\","
                  "\"volume\":"    + DoubleToString(lot,2)     + ","
@@ -47,8 +66,8 @@ void PlaceBuy(double lot = 0.0, double sl = 0.0, double tp = 0.0)
                  "\"tp\":"        + DoubleToString(tp,5)      + ","
                  "\"deviation\":" + IntegerToString(DEFAULT_DEVIATION) +
                  "}";
-
-   string resp = HttpWithRetry("/buy", true, json, 8);   // longer cooldown for trades
+   
+   string resp = HttpWithRetry("/buy", true, json, 8);
 
    if(resp != "")
    {
@@ -94,13 +113,36 @@ void SendHeartbeat()
    string name     = AccountInfoString(ACCOUNT_NAME);
    double balance  = AccountInfoDouble(ACCOUNT_BALANCE);
    double equity   = AccountInfoDouble(ACCOUNT_EQUITY);
+   long leverage   = AccountInfoInteger(ACCOUNT_LEVERAGE); 
+   double margin   = AccountInfoDouble(ACCOUNT_MARGIN_FREE); 
+   string currency = AccountInfoString(ACCOUNT_CURRENCY);
 
-   // Correctly format the JSON string with the "login" field
    string json = StringFormat(
-      "{\"login\":%lld,\"name\":\"%s\",\"balance\":%.2f,\"equity\":%.2f}",
-      login, name, balance, equity
+      "{\"login\":%lld,\"name\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"free_margin\":%.2f,\"currency\":\"%s\",\"leverage\":%lld}",
+      login, name, balance, equity, margin, currency, leverage
    );
    
+   LogDebug("Sending heartbeat with leverage...", __FUNCTION__);
    HttpPost("/mt5/update", json);
 }
+
+void SyncWithUI()
+{
+   string response = HttpGet("/mt5/active-id"); //
+   if(response == "") return;
+
+   long ui_account_id = ExtractIdFromJson(response); //
+   long local_id = AccountInfoInteger(ACCOUNT_LOGIN); //
+
+   // If UI has no selection (null/0) or selection doesn't match this terminal
+   if(ui_account_id == 0 || ui_account_id != local_id)
+   {
+      LogDebug("UI standing by or controlled by another account. Heartbeat suppressed.", __FUNCTION__);
+      return;
+   }
+
+   // Only send heartbeat if IDs match perfectly
+   SendHeartbeat(); //
+}
+
 #endif
