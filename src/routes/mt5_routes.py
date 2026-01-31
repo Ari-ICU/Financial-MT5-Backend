@@ -1,54 +1,55 @@
-from fastapi import APIRouter, Request, Response, HTTPException
-import json
-from ..services.mt5_service import MT5Service
-from ..models.schemas import MT5StatusResponse
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional, Dict, List
 
-router = APIRouter(prefix="/mt5", tags=["MT5 Direct"])
+from src.services.mt5_service import MT5Service
 
-@router.post("/update")
-async def update_mt5_data(request: Request):
-    try:
-        # Get raw bytes to handle potential null terminators from MT5
-        body_bytes = await request.body()
-        # Decode and strip invisible characters that cause parsing errors
-        body_str = body_bytes.decode("utf-8").strip().replace('\0', '')
-        
-        if not body_str:
-            return {"status": "error", "message": "400: Empty payload"}
+router = APIRouter(prefix="/mt5", tags=["MT5"])
 
-        data = json.loads(body_str)
-        # Extract 'login' to use as the unique account identifier
-        account_id = str(data.get("login", "unknown"))
-        
-        return await MT5Service.update_account_info(account_id, data)
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+# Global variable (simple for now – later use Redis or proper state)
+active_account_id: Optional[str] = None
+
+
+class SetActiveRequest(BaseModel):
+    account_id: str
+
+
+@router.post("/set-active")
+async def set_active_account(req: SetActiveRequest):
+    """
+    UI calls this when user selects/changes account
+    """
+    global active_account_id
+    cleaned_id = req.account_id.strip()
+    if not cleaned_id.isdigit():
+        raise HTTPException(400, detail="Account ID must be numeric")
+    
+    active_account_id = cleaned_id
+    
+    return {
+        "status": "ok",
+        "message": f"Active account set to {active_account_id}. Data should appear in ~5–15 seconds.",
+        "active_account_id": active_account_id
+    }
+
 
 @router.get("/active-id")
-async def get_active_id(request: Request):
-    active_id = request.cookies.get("mt5_id")
-    return {"active_account_id": active_id}
+async def get_active_id():
+    """EA calls this to know which account is currently selected in UI"""
+    return {"active_account_id": active_account_id}
+
 
 @router.get("/account")
-async def get_account(response: Response, account_id: str = None):
-    # 1. Fetch data first
-    data = await MT5Service.get_account_info(account_id)
+async def get_account(account_id: Optional[str] = None):
+    if not account_id:
+        return {"status": "error", "message": "account_id parameter is required"}
     
-    # 2. Only set the active-id cookie if the account is known
-    if account_id and data.get("status") != "error":
-        response.set_cookie(
-            key="mt5_id", 
-            value=account_id, 
-            httponly=True,
-            samesite="lax",
-            max_age=3600 # 1 hour session
-        )
+    data = await MT5Service.get_account_info(account_id)
     return data
+
 
 @router.get("/status")
 async def get_status():
-    logins = await MT5Service.get_active_logins()
-    return {
-        "status": "connected" if logins else "disconnected",
-        "recent_logins": logins
-    }
+    data = await MT5Service.get_connection_status()
+    data["recent_logins"] = await MT5Service.get_active_logins()
+    return data

@@ -12,23 +12,28 @@
 #include "FastAPI_Logger.mqh"
 
 //+------------------------------------------------------------------+
-//| Helper to extract Account ID from JSON string                    |
+//| Extract active_account_id from JSON                              |
 //+------------------------------------------------------------------+
-long ExtractIdFromJson(string json)
+long ExtractActiveAccountId(string json)
 {
-   // Explicitly check for the null literal returned by the backend
-   if(StringFind(json, ":null") != -1) return 0;
+   if(StringFind(json, "\"active_account_id\":null") != -1) 
+      return 0;
+   
+   if(StringFind(json, "\"active_account_id\":") == -1) 
+      return 0;
 
-   string key = "\"active_account_id\":\"";
-   int startPos = StringFind(json, key);
-   if(startPos == -1) return 0;
+   string search = "\"active_account_id\":\"";
+   int pos = StringFind(json, search);
+   if(pos == -1) return 0;
 
-   startPos += StringLen(key);
-   int endPos = StringFind(json, "\"", startPos);
-   if(endPos == -1) return 0;
+   pos += StringLen(search);
+   int end = StringFind(json, "\"", pos);
+   if(end == -1) return 0;
 
-   string idStr = StringSubstr(json, startPos, endPos - startPos);
-   return StringToInteger(idStr);
+   string id_str = StringSubstr(json, pos, end - pos);
+   long id = StringToInteger(id_str);
+   
+   return (id > 0) ? id : 0;
 }
 
 void TestConnection()
@@ -126,23 +131,44 @@ void SendHeartbeat()
    HttpPost("/mt5/update", json);
 }
 
+//+------------------------------------------------------------------+
+//| Only send heartbeat if this terminal is the selected one        |
+//+------------------------------------------------------------------+
 void SyncWithUI()
 {
-   string response = HttpGet("/mt5/active-id");
-   if(response == "") return;
-
-   long ui_account_id = ExtractIdFromJson(response); 
-   long local_id = AccountInfoInteger(ACCOUNT_LOGIN);
-
-   // CRITICAL: If no UI selection exists or IDs don't match, STOP here.
-   if(ui_account_id == 0 || ui_account_id != local_id)
+   string resp = HttpGet("/mt5/active-id");
+   if(resp == "" || StringLen(resp) < 10)
    {
-      LogDebug("SyncWithUI → Standing by. This terminal is NOT selected in UI.", __FUNCTION__);
-      return; // Exit function immediately
+      LogDebug("No valid response from /mt5/active-id", __FUNCTION__);
+      return;
    }
 
-   // Only if IDs match, proceed to send the heartbeat
-   SendHeartbeat(); 
+   long requested_id = ExtractActiveAccountId(resp);
+   
+   if(requested_id == 0)
+   {
+      LogDebug("No account currently selected in UI", __FUNCTION__);
+      return;
+   }
+
+   long my_login = AccountInfoInteger(ACCOUNT_LOGIN);
+   
+   if(requested_id != my_login)
+   {
+      // Optional: log only every ~30 seconds to reduce spam
+      static datetime last_log = 0;
+      if(TimeCurrent() - last_log > 30)
+      {
+         LogDebug(StringFormat("UI selected %lld | this terminal is %lld → silent mode", 
+                              requested_id, my_login), __FUNCTION__);
+         last_log = TimeCurrent();
+      }
+      return;
+   }
+
+   // ── Only if IDs match ──
+   LogInfo("This terminal is selected in UI → sending heartbeat", __FUNCTION__);
+   SendHeartbeat();
 }
 
 #endif

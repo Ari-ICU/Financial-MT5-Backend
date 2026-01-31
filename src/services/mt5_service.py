@@ -1,3 +1,4 @@
+# src/mt5_service.py
 from typing import Dict, Optional
 
 class MT5Service:
@@ -16,7 +17,6 @@ class MT5Service:
 
     @classmethod
     async def get_account_info(cls, account_id: Optional[str] = None) -> Dict:
-        # REMOVE the auto-fallback logic
         if not account_id:
             return {"status": "error", "message": "No account selected"}
 
@@ -27,9 +27,6 @@ class MT5Service:
 
     @classmethod
     async def get_connection_status(cls) -> Dict:
-        """
-        Returns the current connection status based on cached data
-        """
         if not cls._account_data:
             return {
                 "status": "disconnected",
@@ -43,10 +40,8 @@ class MT5Service:
 
     @classmethod
     async def get_active_logins(cls) -> list:
-        # Returns all unique logins currently stored in memory
         return list(cls._account_data.keys())
 
     @classmethod
     async def disconnect_all(cls) -> None:
-        """Clears cache on shutdown"""
         cls._account_data.clear()
