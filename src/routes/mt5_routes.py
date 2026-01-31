@@ -27,8 +27,7 @@ async def update_mt5_data(request: Request):
 @router.get("/active-id")
 async def get_active_id(request: Request):
     active_id = request.cookies.get("mt5_id")
-    # Ensuring 'null' is explicit for the EA to catch
-    return {"active_account_id": active_id if active_id else None}
+    return {"active_account_id": active_id}
 
 @router.get("/account")
 async def get_account(response: Response, account_id: str = None):

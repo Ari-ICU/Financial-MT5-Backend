@@ -52,12 +52,11 @@ void OnDeinit(const int reason)
 void OnTimer()
 {
    datetime now = TimeCurrent();
-
-   // Trigger UI Sync and Heartbeat based on your set interval
    if(now - last_heartbeat >= HEARTBEAT_SECONDS)
    {
-      // SyncWithUI() internally calls SendHeartbeat() ONLY if IDs match
-      SyncWithUI();
+      // REMOVE direct SendHeartbeat() calls.
+      // Use SyncWithUI() as the only entry point.
+      SyncWithUI(); 
       last_heartbeat = now;
    }
 }

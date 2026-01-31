@@ -134,15 +134,15 @@ void SyncWithUI()
    long ui_account_id = ExtractIdFromJson(response); 
    long local_id = AccountInfoInteger(ACCOUNT_LOGIN);
 
-   // CRITICAL: Exit immediately if IDs don't match or UI is null (0)
+   // CRITICAL: If no UI selection exists or IDs don't match, STOP here.
    if(ui_account_id == 0 || ui_account_id != local_id)
    {
-      // Using LogDebug to keep the Experts tab clean
-      LogDebug("UI standing by for Account: " + IntegerToString(ui_account_id) + ". This terminal (Account: " + IntegerToString(local_id) + ") is suppressed.", __FUNCTION__);
-      return; 
+      LogDebug("SyncWithUI → Standing by. This terminal is NOT selected in UI.", __FUNCTION__);
+      return; // Exit function immediately
    }
 
-   // Only proceed to heartbeat if the test above passed
-   SendHeartbeat();
+   // Only if IDs match, proceed to send the heartbeat
+   SendHeartbeat(); 
 }
+
 #endif
