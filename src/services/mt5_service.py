@@ -22,6 +22,22 @@ class MT5Service:
         return cls._account_data.get(account_id, {"status": "error", "message": "No data received yet"})
 
     @classmethod
+    async def get_connection_status(cls) -> Dict:
+        """
+        Returns the current connection status based on cached data
+        """
+        if not cls._account_data:
+            return {
+                "status": "disconnected",
+                "connected_accounts": []
+            }
+        
+        return {
+            "status": "connected",
+            "connected_accounts": list(cls._account_data.keys())
+        }
+        
+    @classmethod
     async def disconnect_all(cls) -> None:
         """Clears cache on shutdown"""
         cls._account_data.clear()

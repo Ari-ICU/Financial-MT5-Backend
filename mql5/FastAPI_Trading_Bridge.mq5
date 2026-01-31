@@ -110,6 +110,7 @@ void OnTick()
    // For manual / testing only — remove or comment in production
    // static int counter = 0;
    // if(counter++ % 120 == 0) PlaceBuy(DEFAULT_LOT_SIZE, 0, 0);
+   SendHeartbeat();
 }
 
 //+------------------------------------------------------------------+

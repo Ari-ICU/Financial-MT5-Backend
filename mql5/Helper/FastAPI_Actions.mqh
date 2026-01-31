@@ -90,22 +90,17 @@ void CloseTicket(long ticket)
 
 void SendHeartbeat()
 {
-   // Gather data into clean local variables
    long login      = AccountInfoInteger(ACCOUNT_LOGIN);
    string name     = AccountInfoString(ACCOUNT_NAME);
    double balance  = AccountInfoDouble(ACCOUNT_BALANCE);
    double equity   = AccountInfoDouble(ACCOUNT_EQUITY);
-   double margin   = AccountInfoDouble(ACCOUNT_MARGIN_FREE); // Added Free Margin
-   string currency = AccountInfoString(ACCOUNT_CURRENCY);
 
-   // CRITICAL: Use StringFormat with correct type specifiers:
-   // %lld = long, %s = string, %.2f = double with 2 decimals
+   // Correctly format the JSON string with the "login" field
    string json = StringFormat(
-      "{\"login\":%lld,\"name\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"free_margin\":%.2f,\"currency\":\"%s\"}",
-      login, name, balance, equity, margin, currency
+      "{\"login\":%lld,\"name\":\"%s\",\"balance\":%.2f,\"equity\":%.2f}",
+      login, name, balance, equity
    );
-
-   LogDebug("Sending heartbeat...", __FUNCTION__);
+   
    HttpPost("/mt5/update", json);
 }
 #endif

@@ -47,35 +47,19 @@ string HttpPost(string endpoint, string json)
 
    char data[], result[];
    string resp_headers;
-   
-   // Convert string to UTF-8 byte array
    int len = StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
    
-   // CRITICAL FIX: Resize to remove the null terminator byte '\0'
-   // FastAPI's json parser will fail if this byte is included
-   if(len > 0) ArrayResize(data, len - 1); 
+   // Remove the null terminator byte so FastAPI receives clean JSON
+   if(len > 0) ArrayResize(data, len - 1);
 
    string url = API_BASE_URL + endpoint;
    string headers = "Content-Type: application/json\r\n";
 
    ResetLastError();
-   // Explicitly pass ArraySize(data) to ensure the correct payload length
+   // The 5th parameter (data) MUST be passed to WebRequest
    int code = WebRequest("POST", url, headers, HTTP_TIMEOUT_MS, data, result, resp_headers);
 
-   if(code == -1)
-   {
-      LogError("WebRequest Error: " + (string)GetLastError(), __FUNCTION__);
-      return "";
-   }
-
-   string resp = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
-   
-   if(code >= 400)
-   {
-      LogError(StringFormat("Server rejected request: %d | Response: %s", code, resp), __FUNCTION__);
-      return "";
-   }
-
-   return resp;
+   if(code == -1) return "";
+   return CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
 }
 #endif
