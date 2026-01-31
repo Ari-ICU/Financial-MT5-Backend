@@ -31,9 +31,10 @@ async def get_active_id(request: Request):
 
 @router.get("/account")
 async def get_account(response: Response, account_id: str = None):
+    # 1. Fetch data first
     data = await MT5Service.get_account_info(account_id)
     
-    # Only set the cookie if we actually found data for this account
+    # 2. Only set the active-id cookie if the account is known
     if account_id and data.get("status") != "error":
         response.set_cookie(
             key="mt5_id", 

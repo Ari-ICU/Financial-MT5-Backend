@@ -16,14 +16,14 @@ class MT5Service:
 
     @classmethod
     async def get_account_info(cls, account_id: Optional[str] = None) -> Dict:
-        # Remove the auto-fallback to list(keys())[0] to prevent showing stale data
+        # REMOVE the auto-fallback logic
         if not account_id:
             return {"status": "error", "message": "No account selected"}
 
         return cls._account_data.get(account_id, {
             "status": "error", 
-            "message": f"No data received for account {account_id}"
-    })
+            "message": f"No data received yet for account {account_id}"
+        })
 
     @classmethod
     async def get_connection_status(cls) -> Dict:
