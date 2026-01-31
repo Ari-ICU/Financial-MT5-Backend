@@ -128,21 +128,21 @@ void SendHeartbeat()
 
 void SyncWithUI()
 {
-   string response = HttpGet("/mt5/active-id"); //
+   string response = HttpGet("/mt5/active-id");
    if(response == "") return;
 
-   long ui_account_id = ExtractIdFromJson(response); //
-   long local_id = AccountInfoInteger(ACCOUNT_LOGIN); //
+   long ui_account_id = ExtractIdFromJson(response); 
+   long local_id = AccountInfoInteger(ACCOUNT_LOGIN);
 
-   // If UI has no selection (null/0) or selection doesn't match this terminal
+   // CRITICAL: Exit immediately if IDs don't match or UI is null (0)
    if(ui_account_id == 0 || ui_account_id != local_id)
    {
-      LogDebug("UI standing by or controlled by another account. Heartbeat suppressed.", __FUNCTION__);
-      return;
+      // Using LogDebug to keep the Experts tab clean
+      LogDebug("UI standing by for Account: " + IntegerToString(ui_account_id) + ". This terminal (Account: " + IntegerToString(local_id) + ") is suppressed.", __FUNCTION__);
+      return; 
    }
 
-   // Only send heartbeat if IDs match perfectly
-   SendHeartbeat(); //
+   // Only proceed to heartbeat if the test above passed
+   SendHeartbeat();
 }
-
 #endif
