@@ -38,12 +38,6 @@ class Settings(BaseSettings):
     CORS_HEADERS: list = ["*"]
     
     # =============================================================================
-    # MetaAPI Configuration
-    # =============================================================================
-    METAAPI_TOKEN: str = os.getenv("METAAPI_TOKEN", "")
-    METAAPI_ACCOUNT_ID: str = os.getenv("METAAPI_ACCOUNT_ID", "")
-    
-    # =============================================================================
     # Connection Configuration
     # =============================================================================
     CONNECTION_TIMEOUT: int = 30

@@ -38,38 +38,44 @@ string HttpGet(string endpoint)
    return resp;
 }
 
+//+------------------------------------------------------------------+
+//| Fully Fixed HttpPost for macOS / Direct FastAPI Bridge           |
+//+------------------------------------------------------------------+
 string HttpPost(string endpoint, string json)
 {
+   if(StringLen(json) == 0) return "";
+
    char data[], result[];
    string resp_headers;
-
-   StringToCharArray(json, data);
-   ArrayResize(data, StringLen(json));   // avoid null terminator issues
+   
+   // Convert string to UTF-8 byte array
+   int len = StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
+   
+   // CRITICAL FIX: Resize to remove the null terminator byte '\0'
+   // FastAPI's json parser will fail if this byte is included
+   if(len > 0) ArrayResize(data, len - 1); 
 
    string url = API_BASE_URL + endpoint;
    string headers = "Content-Type: application/json\r\n";
 
-   LogDebug("POST → " + url + " | JSON: " + StringSubstr(json,0,120), __FUNCTION__);
-
    ResetLastError();
-   int code = WebRequest("POST", url, headers, NULL, HTTP_TIMEOUT_MS,
-                         data, ArraySize(data), result, resp_headers);
+   // Explicitly pass ArraySize(data) to ensure the correct payload length
+   int code = WebRequest("POST", url, headers, HTTP_TIMEOUT_MS, data, result, resp_headers);
 
-   string resp = CharArrayToString(result,0,-1,CP_UTF8);
-
-   if(code == -1 || code >= 400)
+   if(code == -1)
    {
-      int err = GetLastError();
-      LogError("POST failed | " + endpoint + " | HTTP=" + IntegerToString(code) + " | Err=" + IntegerToString(err), __FUNCTION__);
-      LogError("Sent JSON: " + json, __FUNCTION__);
-      LogError("Response: " + resp, __FUNCTION__);
+      LogError("WebRequest Error: " + (string)GetLastError(), __FUNCTION__);
       return "";
    }
 
-   LogInfo("POST OK | " + endpoint + " | HTTP " + IntegerToString(code), __FUNCTION__);
-   LogDebug("Response: " + StringSubstr(resp,0,180), __FUNCTION__);
+   string resp = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+   
+   if(code >= 400)
+   {
+      LogError(StringFormat("Server rejected request: %d | Response: %s", code, resp), __FUNCTION__);
+      return "";
+   }
 
    return resp;
 }
-
 #endif

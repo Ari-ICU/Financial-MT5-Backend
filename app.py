@@ -38,27 +38,21 @@ async def lifespan(app: FastAPI):
     Like: OnInit() and OnDeinit() in MQL5 EA
     """
     # Startup - Like OnInit()
+    # Update this dictionary to remove METAAPI_TOKEN
     AppLogger.log_startup(logger, {
         "APP_TITLE": settings.APP_TITLE,
         "APP_VERSION": settings.APP_VERSION,
-        "METAAPI_TOKEN": settings.METAAPI_TOKEN,
-        "METAAPI_ACCOUNT_ID": settings.METAAPI_ACCOUNT_ID,
+        "CORS_ORIGINS": settings.CORS_ORIGINS
     })
     
-    if not settings.METAAPI_TOKEN:
-        logger.warning("⚠️  METAAPI_TOKEN not set")
-    if not settings.METAAPI_ACCOUNT_ID:
-        logger.warning("⚠️  METAAPI_ACCOUNT_ID not set")
-    
-    logger.info("✅ Application started successfully")
+    # Logic to initialize any local resources if needed
+    logger.info("✅ Direct MQL5 Bridge Mode Active (No MetaApi)")
     
     yield
     
     # Shutdown - Like OnDeinit()
     AppLogger.log_shutdown(logger)
     await MT5Service.disconnect_all()
-    logger.info("✅ All connections closed")
-
 
 # =============================================================================
 # Initialize FastAPI Application
@@ -117,7 +111,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,  # Set this to 8001
         reload=True,
         log_level="info"
     )
