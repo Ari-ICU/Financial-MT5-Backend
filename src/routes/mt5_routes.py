@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, Response, HTTPException
 import json
 from ..services.mt5_service import MT5Service
 from ..models.schemas import MT5StatusResponse
@@ -25,7 +25,14 @@ async def update_mt5_data(request: Request):
         return {"status": "error", "message": str(e)}
 
 @router.get("/account")
-async def get_account(account_id: str = None):
+async def get_account(response: Response, account_id: str = None):
+    if account_id:
+        response.set_cookie(
+            key="mt5_id", 
+            value=account_id, 
+            httponly=True,  # This hides it from JavaScript/LocalStorage
+            samesite="lax"
+        )
     return await MT5Service.get_account_info(account_id)
 
 @router.get("/status", response_model=MT5StatusResponse)
