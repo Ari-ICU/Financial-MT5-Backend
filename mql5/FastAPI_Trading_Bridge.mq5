@@ -23,19 +23,22 @@ datetime last_heartbeat     = 0;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   LogInfo("EA initialized | API base = " + API_BASE_URL, __FUNCTION__);
-   
+   TERMINAL_ID = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+
+   LogInfo("EA initialized | Terminal ID = " + TERMINAL_ID, __FUNCTION__);
+   LogInfo("API base = " + API_BASE_URL, __FUNCTION__);
+
    if(HEARTBEAT_SECONDS < 10)
       LogWarn("HEARTBEAT_SECONDS too low — setting minimum 10s", __FUNCTION__);
 
    TestConnection();
 
-   // Check every 500ms for timer tasks
    EventSetMillisecondTimer(500);
 
    LogInfo("Initialization complete. Waiting for UI sync...", __FUNCTION__);
    return(INIT_SUCCEEDED);
 }
+
 
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |

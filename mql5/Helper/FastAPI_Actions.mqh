@@ -122,17 +122,19 @@ void SendHeartbeat()
    double margin   = AccountInfoDouble(ACCOUNT_MARGIN_FREE); 
    string currency = AccountInfoString(ACCOUNT_CURRENCY);
 
+   // Ensure the string format is clean with no extra spaces or characters at the end
    string json = StringFormat(
       "{\"login\":%lld,\"name\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"free_margin\":%.2f,\"currency\":\"%s\",\"leverage\":%lld}",
       login, name, balance, equity, margin, currency, leverage
    );
-   
-   LogDebug("Sending heartbeat with leverage...", __FUNCTION__);
+
+   LogDebug("Sending heartbeat...", __FUNCTION__);
    HttpPost("/mt5/update", json);
 }
 
 //+------------------------------------------------------------------+
-//| Only send heartbeat if this terminal is the selected one        |
+//| Only send heartbeat if this terminal is the selected one         |
+//| UPDATED: Instant sync logic                                      |
 //+------------------------------------------------------------------+
 void SyncWithUI()
 {
@@ -143,7 +145,7 @@ void SyncWithUI()
       return;
    }
 
-   // Extract as string directly (safer)
+   // 1. Extract the active ID from the JSON response
    string requested_str = "";
    int pos = StringFind(response, "\"active_account_id\":\"");
    if(pos != -1)
@@ -154,31 +156,35 @@ void SyncWithUI()
          requested_str = StringSubstr(response, pos, end - pos);
    }
 
-   if(requested_str == "")
+   // 2. Handle null or empty active ID
+   if(requested_str == "" || requested_str == "null")
    {
-      LogDebug("No active_account_id found in response", __FUNCTION__);
+      LogDebug("No active account selected in UI", __FUNCTION__);
       return;
    }
 
+   // 3. Compare with current terminal login
    string my_login_str = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
 
-   LogDebug(StringFormat("UI wants: '%s' | This terminal: '%s'", requested_str, my_login_str), __FUNCTION__);
-
-   if(requested_str != my_login_str)
+   if(requested_str == my_login_str)
    {
-      // Optional: log only every 30 seconds to avoid spam
+      // SUCCESS: This terminal is the one the user wants to see.
+      // We call SendHeartbeat() immediately to push data to the backend.
+      LogInfo(StringFormat("Match found (ID: %s) -> Pushing data to UI...", my_login_str), __FUNCTION__);
+      SendHeartbeat(); 
+   }
+   else 
+   {
+      // SILENT MODE: Another terminal is active. 
+      // We only log this once every 30 seconds to avoid flooding the terminal logs.
       static datetime lastLog = 0;
       datetime now = TimeCurrent();
       if(now - lastLog >= 30)
       {
-         LogWarn(StringFormat("Not selected (UI=%s vs me=%s) → silent", requested_str, my_login_str), __FUNCTION__);
+         LogWarn(StringFormat("Idle: UI wants %s, but I am %s", requested_str, my_login_str), __FUNCTION__);
          lastLog = now;
       }
-      return;
    }
-
-   LogInfo("This terminal matches UI selection → sending heartbeat", __FUNCTION__);
-   SendHeartbeat();
 }
 
 #endif

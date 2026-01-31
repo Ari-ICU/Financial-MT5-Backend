@@ -41,25 +41,34 @@ string HttpGet(string endpoint)
 //+------------------------------------------------------------------+
 //| Fully Fixed HttpPost for macOS / Direct FastAPI Bridge           |
 //+------------------------------------------------------------------+
+// mql5/Helper/FastAPI_Http.mqh
+
 string HttpPost(string endpoint, string json)
 {
    if(StringLen(json) == 0) return "";
 
    char data[], result[];
    string resp_headers;
+   
+   // Convert string to char array
    int len = StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
    
-   // Remove the null terminator byte so FastAPI receives clean JSON
-   if(len > 0) ArrayResize(data, len - 1);
-
+   // IMPORTANT FIX: Remove the null terminator byte (\0) 
+   // so the backend receives clean JSON
+   if(len > 0 && data[len-1] == 0) 
+   {
+      ArrayResize(data, len - 1);
+   }
+   
    string url = API_BASE_URL + endpoint;
    string headers = "Content-Type: application/json\r\n";
 
    ResetLastError();
-   // The 5th parameter (data) MUST be passed to WebRequest
+   // Use the resized 'data' array without the null terminator
    int code = WebRequest("POST", url, headers, HTTP_TIMEOUT_MS, data, result, resp_headers);
-
+   
    if(code == -1) return "";
    return CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
 }
+
 #endif
