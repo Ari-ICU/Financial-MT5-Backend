@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
+#                             ^^^^  added here
+
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 
@@ -12,6 +14,25 @@ active_account_id: Optional[str] = None
 
 class SetActiveRequest(BaseModel):
     account_id: str
+
+
+@router.post("/update")
+@router.post("/heartbeat")  # optional alias in case EA uses different path
+async def update_mt5_account(payload: Dict = Body(...)):
+    """
+    Receives heartbeat/account info from MT5 EA
+    """
+    login = str(payload.get("login", ""))
+    if not login:
+        return {"status": "error", "message": "Missing 'login' field in payload"}
+
+    result = await MT5Service.update_account_info(login, payload)
+
+    return {
+        "status": "success",
+        "message": f"Updated data for account {login}",
+        **result
+    }
 
 
 @router.post("/set-active")

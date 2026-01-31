@@ -136,38 +136,48 @@ void SendHeartbeat()
 //+------------------------------------------------------------------+
 void SyncWithUI()
 {
-   string resp = HttpGet("/mt5/active-id");
-   if(resp == "" || StringLen(resp) < 10)
+   string response = HttpGet("/mt5/active-id");
+   if(response == "" || StringLen(response) < 10)
    {
       LogDebug("No valid response from /mt5/active-id", __FUNCTION__);
       return;
    }
 
-   long requested_id = ExtractActiveAccountId(resp);
-   
-   if(requested_id == 0)
+   // Extract as string directly (safer)
+   string requested_str = "";
+   int pos = StringFind(response, "\"active_account_id\":\"");
+   if(pos != -1)
    {
-      LogDebug("No account currently selected in UI", __FUNCTION__);
+      pos += StringLen("\"active_account_id\":\"");
+      int end = StringFind(response, "\"", pos);
+      if(end != -1)
+         requested_str = StringSubstr(response, pos, end - pos);
+   }
+
+   if(requested_str == "")
+   {
+      LogDebug("No active_account_id found in response", __FUNCTION__);
       return;
    }
 
-   long my_login = AccountInfoInteger(ACCOUNT_LOGIN);
-   
-   if(requested_id != my_login)
+   string my_login_str = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+
+   LogDebug(StringFormat("UI wants: '%s' | This terminal: '%s'", requested_str, my_login_str), __FUNCTION__);
+
+   if(requested_str != my_login_str)
    {
-      // Optional: log only every ~30 seconds to reduce spam
-      static datetime last_log = 0;
-      if(TimeCurrent() - last_log > 30)
+      // Optional: log only every 30 seconds to avoid spam
+      static datetime lastLog = 0;
+      datetime now = TimeCurrent();
+      if(now - lastLog >= 30)
       {
-         LogDebug(StringFormat("UI selected %lld | this terminal is %lld → silent mode", 
-                              requested_id, my_login), __FUNCTION__);
-         last_log = TimeCurrent();
+         LogWarn(StringFormat("Not selected (UI=%s vs me=%s) → silent", requested_str, my_login_str), __FUNCTION__);
+         lastLog = now;
       }
       return;
    }
 
-   // ── Only if IDs match ──
-   LogInfo("This terminal is selected in UI → sending heartbeat", __FUNCTION__);
+   LogInfo("This terminal matches UI selection → sending heartbeat", __FUNCTION__);
    SendHeartbeat();
 }
 
