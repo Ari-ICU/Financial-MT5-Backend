@@ -9,7 +9,7 @@
 
 input string   API_BASE_URL       = "http://127.0.0.1:8001";   // Must be allowed in MT5 → Expert Advisors
 input int      HTTP_TIMEOUT_MS    = 8001;
-input string   TRADE_SYMBOL       = "EURUSD";
+input string   TRADE_SYMBOL       = "BTCUSDm";
 input double   DEFAULT_LOT_SIZE   = 0.01;
 input int      DEFAULT_DEVIATION  = 30;
 input bool     ENABLE_CHART_COMMENT = true;
