@@ -74,7 +74,13 @@ async def get_account(account_id: Optional[str] = None):
 async def get_status():
     data = await MT5Service.get_connection_status()
     recent = await MT5Service.get_active_logins()
-    
+
+    # If the currently active account is stale (not in connected_accounts), unset it
+    global active_account_id
+    if active_account_id and (active_account_id not in data.get("connected_accounts", [])):
+        # clear the active selection when the EA hasn't sent a heartbeat recently
+        active_account_id = None
+
     # Optional: sort by name or something if you add timestamps later
     return {
         **data,
@@ -82,3 +88,23 @@ async def get_status():
         "active_account_id": active_account_id,
         "last_updated": datetime.utcnow().isoformat()  # optional
     }
+
+
+class TradeRequest(BaseModel):
+    account_id: str
+    action: str
+    volume: Optional[float] = 0.01
+
+
+@router.post("/trade")
+async def trade(req: TradeRequest):
+    """Perform a quick trade action. Actions: buy, sell, close_profit, close_loss, close_all"""
+    acc = req.account_id.strip()
+    if not acc:
+        raise HTTPException(400, detail="account_id is required")
+
+    result = await MT5Service.perform_trade(req.action, acc, req.volume)
+    if result.get("status") == "error":
+        raise HTTPException(400, detail=result.get("message"))
+
+    return result

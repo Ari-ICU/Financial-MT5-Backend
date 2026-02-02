@@ -45,3 +45,23 @@ class MT5Service:
     @classmethod
     async def disconnect_all(cls) -> None:
         cls._account_data.clear()
+
+    @classmethod
+    async def perform_trade(cls, action: str, account_id: str, volume: float = 0.01) -> Dict:
+        """Simulate performing a trade action. In a real system this would forward the request to the EA via HTTP or a message queue."""
+        # Basic validation
+        if account_id not in cls._account_data:
+            return {"status": "error", "message": f"No such account: {account_id}"}
+
+        valid = {"buy", "sell", "close_profit", "close_loss", "close_all"}
+        if action not in valid:
+            return {"status": "error", "message": f"Invalid action: {action}"}
+
+        # Simulated response; we don't mutate real positions here.
+        return {
+            "status": "ok",
+            "account_id": account_id,
+            "action": action,
+            "volume": volume,
+            "message": f"Simulated {action} on {account_id} (volume {volume})"
+        }
